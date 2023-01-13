@@ -1,0 +1,259 @@
+<head>
+  <style>
+    body {
+      background-color: green;
+      margin: 0;
+    }
+    .opacity {
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .opacity.active {
+      opacity: 1;
+    }
+  </style>
+  <script src="./obsstudio.js"></script>
+</head>
+<div id="telemetry" class="opacity active">
+  <svg
+    width="580px"
+    height="240px"
+    viewBox="0 0 240 100"
+    version="1.1"
+    id="svg5"
+    inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+    sodipodi:docname="frame.svg"
+    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:svg="http://www.w3.org/2000/svg"
+  >
+    <sodipodi:namedview
+      id="namedview7"
+      pagecolor="#ffffff"
+      bordercolor="#000000"
+      borderopacity="0.25"
+      showgrid="false"
+      showguides="true"
+    />
+    <g id="layer1">
+      <g id="g995" transform="translate(10,0)">
+        <rect
+          style="
+            fill: #d7d71f;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999934;
+          "
+          id="Clutch"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+        <rect
+          style="
+            fill: #407eb6;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999999;
+          "
+          id="ClutchInvert"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+      </g>
+      <g id="g1001" transform="translate(40,0)">
+        <rect
+          style="
+            fill: #db1b1b;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999934;
+          "
+          id="Brake"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+        <rect
+          style="fill: #407eb6; fill-opacity: 1; stroke: none; stroke-width: 1"
+          id="BrakeInvert"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+      </g>
+      <g id="container">
+        <g id="Steer" transform="rotate(0,120,50) translate(-20,-10)">
+          <path
+            id="path1055"
+            style="fill: #35d422; fill-opacity: 1; stroke: none"
+            d="m 140,10 a 50,50 0 0 0 -50,50 50,50 0 0 0 50,50 50,50 0 0 0 50,-50 50,50 0 0 0 -50,-50 z m 0,20 a 30,30 0 0 1 30,30 30,30 0 0 1 -30,30 30,30 0 0 1 -30,-30 30,30 0 0 1 30,-30 z"
+          />
+          <path
+            id="circle1057"
+            style="fill: #407eb6; fill-opacity: 1; stroke: none"
+            d="M -11.703125,127.05859 A 50,50 0 0 0 -66.527344,90.427734 50,50 0 0 0 -110,140 a 50,50 0 0 0 43.472656,49.57227 50,50 0 0 0 54.824219,-36.63086 L -31.03125,147.76172 A 30,30 0 0 1 -60,170 a 30,30 0 0 1 -30,-30 30,30 0 0 1 30,-30 30,30 0 0 1 28.867188,22.26562 z"
+            transform="rotate(-90)"
+          />
+        </g>
+        <text
+          transform="translate(168,23.5)"
+          xml:space="preserve"
+          style="
+            font-size: 64px;
+            text-align: center;
+            text-anchor: middle;
+            fill: #2f8bf0;
+            fill-opacity: 1;
+            stroke: none;
+            pointer-events: none;
+          "
+          x="50"
+          y="50"
+          id="text3042"
+        >
+          <tspan id="Gear" x="50" y="50">N</tspan>
+        </text>
+      </g>
+      <g id="g1846" transform="translate(180,0)">
+        <rect
+          style="
+            fill: #0aebec;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999934;
+          "
+          id="Throttle"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+        <rect
+          style="
+            fill: #407eb6;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999997;
+          "
+          id="ThrottleInvert"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+      </g>
+      <g id="g1846" transform="translate(210,0)">
+        <rect
+          style="
+            fill: #0aebec;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999934;
+          "
+          id="HandBrake"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+        <rect
+          style="
+            fill: #407eb6;
+            fill-opacity: 1;
+            stroke: none;
+            stroke-width: 0.999997;
+          "
+          id="HandBrakeInvert"
+          width="20"
+          height="100"
+          x="0"
+          y="0"
+        />
+      </g>
+    </g>
+  </svg>
+</div>
+<script>
+  var params = {
+    Steer: 0.0,
+    Clutch: 0.0,
+    Brake: 0.0,
+    Throttle: 0.0,
+    HandBrake: 0.0,
+    Gear: 0,
+    Active: false,
+  };
+  let telemetry = document.getElementById("telemetry");
+  let active = true;
+  function activate() {
+    if (!active) {
+      obsstudio.setCurrentScene("playing");
+      telemetry.classList.add("active");
+      active = true;
+    }
+  }
+  function deactivate() {
+    if (active) {
+      telemetry.classList.remove("active");
+      obsstudio.setCurrentScene("replay-mode");
+      active = false;
+    }
+  }
+  deactivate();
+  let es = new EventSource("/sse");
+  let steer = document.getElementById("Steer");
+  let clutch = document.getElementById("ClutchInvert");
+  let footbrake = document.getElementById("BrakeInvert");
+  let throttle = document.getElementById("ThrottleInvert");
+  let handbrake = document.getElementById("HandBrakeInvert");
+  let gear = document.getElementById("Gear");
+  function update() {
+    if (params.Active) {
+      activate();
+    } else {
+      deactivate();
+    }
+    steer.setAttribute(
+      "transform",
+      "rotate(" + 270 * params.Steer + ",120,50) translate(-20,-10)"
+    );
+    clutch.setAttribute("height", 100 * (1 - params.Clutch));
+    footbrake.setAttribute("height", 100 * (1 - params.Brake));
+    throttle.setAttribute("height", 100 * (1 - params.Throttle));
+    handbrake.setAttribute("height", 100 * (1 - params.HandBrake));
+    switch (params.Gear) {
+      case -1:
+        gear.childNodes[0].nodeValue = "R";
+        break;
+      case 0:
+        gear.childNodes[0].nodeValue = "N";
+        break;
+      default:
+        gear.childNodes[0].nodeValue = String(params.Gear);
+        break;
+    }
+  }
+  /*
+  es.addEventListener("error", function (event) {
+    es.close();
+    es = new EventSource("/sse");
+  });
+  */
+  es.addEventListener("message", function (event) {
+    if (event.data.length > 0) {
+      params = JSON.parse(event.data);
+    }
+  });
+  function render() {
+    update();
+    requestAnimationFrame(render);
+  }
+  render();
+</script>
