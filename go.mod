@@ -8,5 +8,6 @@ require (
 	github.com/jake-dog/opensimdash v0.0.0-20190801053246-c788a305534f // indirect
 	github.com/karalabe/hid v1.0.0 // indirect
 	github.com/simulatedsimian/joystick v1.0.1 // indirect
+	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 )

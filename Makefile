@@ -9,7 +9,7 @@ endif
 .PHONY: run build
 
 run: build
-	$(OUTPUT)
+	$(OUTPUT) COM3 COM4
 
 build:
 	mkdir -p $(DIST)

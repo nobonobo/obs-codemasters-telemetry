@@ -5,16 +5,19 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	env "github.com/caarlos0/env/v6"
 	"github.com/jake-dog/opensimdash/codemasters"
 	"github.com/simulatedsimian/joystick"
+	"github.com/tarm/serial"
 )
 
 type Config struct {
@@ -144,10 +147,11 @@ func udpReceiver(ctx context.Context, ch chan<- Params) error {
 	go func() {
 		timer := time.AfterFunc(5*time.Second, func() {
 			status.Deactivate()
-			ch <- status.Get()
+			p := status.Get()
+			p.Active = false
+			ch <- p
 		})
-		lapT := float32(0.0)
-		lapD := float32(0.0)
+		var old codemasters.DirtPacket
 		b := make([]byte, 4096)
 		for {
 			n, _, err := conn.ReadFrom(b)
@@ -156,17 +160,20 @@ func udpReceiver(ctx context.Context, ch chan<- Params) error {
 			}
 			var pkt codemasters.DirtPacket
 			pkt.Decode(b[:n])
-			changed := lapT != pkt.LapTime || lapD != pkt.LapDistance
-			changed = changed || pkt.Throttle > 0.0 || pkt.Speed > 0.0
+			changed := false
+			changed = changed || old.Brake != pkt.Brake
+			changed = changed || old.Throttle != pkt.Throttle
+			changed = changed || old.Clutch != pkt.Clutch
+			changed = changed || old.Steer != pkt.Steer
+			changed = changed || old.LapTime != pkt.LapTime
+			changed = changed || old.LapDistance != pkt.LapDistance
+			old = pkt
 			if changed {
-				lapT = pkt.LapTime
-				lapD = pkt.LapDistance
 				timer.Reset(5 * time.Second)
 				status.Activate()
 			}
 			status.Update(&pkt)
-			p := status.Get()
-			ch <- p
+			ch <- status.Get()
 		}
 	}()
 	select {
@@ -212,23 +219,66 @@ func sse(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		unsubscribe <- ch
 	}()
-	timeout := time.NewTicker(5 * time.Second)
+	timeout := time.NewTicker(30 * time.Second)
 	for {
 		select {
 		case <-r.Context().Done():
 			return
 		case v := <-ch:
-			timeout.Reset(5 * time.Second)
+			timeout.Reset(30 * time.Second)
 			b, _ := json.Marshal(v)
 			fmt.Fprintf(w, "data: %s\n\n", string(b))
 		case <-timeout.C:
-			v := Params{Active: false}
-			b, _ := json.Marshal(v)
-			fmt.Fprintf(w, "data: %s\n\n", string(b))
+			fmt.Fprintf(w, "data: \n\n")
 		}
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
+	}
+}
+
+func forwardProc(ctx context.Context, p1, p2 string) error {
+	srcOnce := sync.Once{}
+	src, err := serial.OpenPort(&serial.Config{Name: os.Args[1], Baud: 115200})
+	if err != nil {
+		return err
+	}
+	defer srcOnce.Do(func() { src.Close() })
+
+	dstOnce := sync.Once{}
+	dst, err := serial.OpenPort(&serial.Config{Name: os.Args[2], Baud: 115200})
+	if err != nil {
+		return err
+	}
+	defer dstOnce.Do(func() { dst.Close() })
+
+	go func() {
+		defer srcOnce.Do(func() { src.Close() })
+		io.Copy(os.Stdout, dst)
+	}()
+	go func() {
+		defer dstOnce.Do(func() { dst.Close() })
+		io.Copy(dst, src)
+	}()
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func forward(ctx context.Context) {
+	if len(os.Args) != 3 {
+		return
+	}
+	p1, p2 := os.Args[1], os.Args[2]
+	for {
+		if err := forwardProc(ctx, p1, p2); err != nil {
+			log.Print(err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		time.Sleep(10 * time.Second)
 	}
 }
 
@@ -238,6 +288,7 @@ var contents embed.FS
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	go forward(ctx)
 	go func() {
 		for {
 			if err := jsReciver(ctx); err != nil {
