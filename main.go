@@ -16,7 +16,6 @@ import (
 
 	env "github.com/caarlos0/env/v6"
 	"github.com/jake-dog/opensimdash/codemasters"
-	"github.com/simulatedsimian/joystick"
 	"github.com/tarm/serial"
 )
 
@@ -27,13 +26,12 @@ type Config struct {
 }
 
 type Params struct {
-	Steer     float32
-	Clutch    float32
-	Brake     float32
-	Throttle  float32
-	HandBrake float32
-	Gear      int
-	Active    bool
+	Steer    float32
+	Clutch   float32
+	Brake    float32
+	Throttle float32
+	Gear     int
+	Active   bool
 }
 
 type Status struct {
@@ -67,19 +65,6 @@ func (status *Status) Update(pkt *codemasters.DirtPacket) {
 	status.Gear = int(pkt.Gear)
 }
 
-func (status *Status) SetHandBrake(v float32) {
-	status.mu.Lock()
-	defer status.mu.Unlock()
-	v = v/0.7 - 0.1
-	if v < 0 {
-		v = 0
-	}
-	if v > 1 {
-		v = 1
-	}
-	status.HandBrake = v
-}
-
 func (status *Status) Get() Params {
 	status.mu.RLock()
 	defer status.mu.RUnlock()
@@ -96,37 +81,6 @@ func init() {
 	config = Config{}
 	if err := env.Parse(&config); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func jsReciver(ctx context.Context) error {
-	var js joystick.Joystick
-	for i := 0; i < 8; i++ {
-		id := (config.Index + i) % 8
-		d, err := joystick.Open(id)
-		if err != nil {
-			continue
-		}
-		log.Printf("found joystick device id=%d", id)
-		js = d
-		break
-	}
-	if js == nil {
-		return fmt.Errorf("not found controller")
-	}
-	ticker := time.NewTicker(10 * time.Millisecond)
-	defer js.Close()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			state, err := js.Read()
-			if err != nil {
-				return err
-			}
-			status.SetHandBrake((float32(state.AxisData[2]) + 32767) / 65535)
-		}
 	}
 }
 
@@ -153,11 +107,17 @@ func udpReceiver(ctx context.Context, ch chan<- Params) error {
 		})
 		var old codemasters.DirtPacket
 		b := make([]byte, 4096)
+		last := time.Now()
 		for {
 			n, _, err := conn.ReadFrom(b)
 			if err != nil {
 				done <- err
 			}
+			now := time.Now()
+			if now.Sub(last) < 15*time.Millisecond {
+				continue
+			}
+			last = now
 			var pkt codemasters.DirtPacket
 			pkt.Decode(b[:n])
 			changed := false
@@ -238,30 +198,27 @@ func sse(w http.ResponseWriter, r *http.Request) {
 }
 
 func forwardProc(ctx context.Context, p1, p2 string) error {
-	srcOnce := sync.Once{}
 	src, err := serial.OpenPort(&serial.Config{Name: os.Args[1], Baud: 115200})
 	if err != nil {
 		return err
 	}
+	srcOnce := sync.Once{}
 	defer srcOnce.Do(func() { src.Close() })
 
-	dstOnce := sync.Once{}
 	dst, err := serial.OpenPort(&serial.Config{Name: os.Args[2], Baud: 115200})
 	if err != nil {
 		return err
 	}
-	defer dstOnce.Do(func() { dst.Close() })
+	defer dst.Close()
 
 	go func() {
 		defer srcOnce.Do(func() { src.Close() })
 		io.Copy(os.Stdout, dst)
 	}()
-	go func() {
-		defer dstOnce.Do(func() { dst.Close() })
-		io.Copy(dst, src)
-	}()
-	<-ctx.Done()
-	return ctx.Err()
+	if _, err := io.Copy(dst, src); err != nil {
+		return err
+	}
+	return nil
 }
 
 func forward(ctx context.Context) {
@@ -289,16 +246,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go forward(ctx)
-	go func() {
-		for {
-			if err := jsReciver(ctx); err != nil {
-				log.Print(err)
-				time.Sleep(5 * time.Second)
-				continue
-			}
-			break
-		}
-	}()
 	ch := make(chan Params, 64)
 	go func() {
 		for {

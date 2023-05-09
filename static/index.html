@@ -149,34 +149,6 @@
           y="0"
         />
       </g>
-      <g id="g1846" transform="translate(210,0)">
-        <rect
-          style="
-            fill: #0aebec;
-            fill-opacity: 1;
-            stroke: none;
-            stroke-width: 0.999934;
-          "
-          id="HandBrake"
-          width="20"
-          height="100"
-          x="0"
-          y="0"
-        />
-        <rect
-          style="
-            fill: #407eb6;
-            fill-opacity: 1;
-            stroke: none;
-            stroke-width: 0.999997;
-          "
-          id="HandBrakeInvert"
-          width="20"
-          height="100"
-          x="0"
-          y="0"
-        />
-      </g>
     </g>
   </svg>
 </div>
@@ -186,7 +158,6 @@
     Clutch: 0.0,
     Brake: 0.0,
     Throttle: 0.0,
-    HandBrake: 0.0,
     Gear: 0,
     Active: false,
   };
@@ -212,7 +183,6 @@
   let clutch = document.getElementById("ClutchInvert");
   let footbrake = document.getElementById("BrakeInvert");
   let throttle = document.getElementById("ThrottleInvert");
-  let handbrake = document.getElementById("HandBrakeInvert");
   let gear = document.getElementById("Gear");
   function update() {
     if (params.Active) {
@@ -227,7 +197,6 @@
     clutch.setAttribute("height", 100 * (1 - params.Clutch));
     footbrake.setAttribute("height", 100 * (1 - params.Brake));
     throttle.setAttribute("height", 100 * (1 - params.Throttle));
-    handbrake.setAttribute("height", 100 * (1 - params.HandBrake));
     switch (params.Gear) {
       case -1:
         gear.childNodes[0].nodeValue = "R";
@@ -240,12 +209,6 @@
         break;
     }
   }
-  /*
-  es.addEventListener("error", function (event) {
-    es.close();
-    es = new EventSource("/sse");
-  });
-  */
   es.addEventListener("message", function (event) {
     if (event.data.length > 0) {
       params = JSON.parse(event.data);
