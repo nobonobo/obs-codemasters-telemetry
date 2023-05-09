@@ -11,6 +11,8 @@
 
 ## OBS settings
 
+add executable option `--enable-gpu`
+
 - add 2 scenes:
   - "playing":
     - webcam capture
