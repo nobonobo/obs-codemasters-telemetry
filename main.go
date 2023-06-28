@@ -198,14 +198,14 @@ func sse(w http.ResponseWriter, r *http.Request) {
 }
 
 func forwardProc(ctx context.Context, p1, p2 string) error {
-	src, err := serial.OpenPort(&serial.Config{Name: os.Args[1], Baud: 115200})
+	src, err := serial.OpenPort(&serial.Config{Name: p1, Baud: 115200})
 	if err != nil {
 		return err
 	}
 	srcOnce := sync.Once{}
 	defer srcOnce.Do(func() { src.Close() })
 
-	dst, err := serial.OpenPort(&serial.Config{Name: os.Args[2], Baud: 115200})
+	dst, err := serial.OpenPort(&serial.Config{Name: p2, Baud: 115200})
 	if err != nil {
 		return err
 	}
