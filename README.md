@@ -4,6 +4,7 @@
 - Supported Titles:
   - DiRT Rally 2.0
   - WRC Generations
+  - EA Sports WRC
 
 - Default Litsten Ports:
   - HTTP: http://localhost:8123/
