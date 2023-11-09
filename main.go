@@ -15,7 +15,7 @@ import (
 	"time"
 
 	env "github.com/caarlos0/env/v6"
-	"github.com/jake-dog/opensimdash/codemasters"
+	"github.com/nobonobo/obs-codemasters-telemetry/codemasters"
 	"github.com/tarm/serial"
 )
 
@@ -51,18 +51,18 @@ func (status *Status) Deactivate() {
 	status.Active = false
 }
 
-func (status *Status) Update(pkt *codemasters.DirtPacket) {
+func (status *Status) Update(pkt codemasters.Telemetry) {
 	status.mu.Lock()
 	defer status.mu.Unlock()
 	pol := float32(1)
-	if pkt.Track_size == 0 { // for WRC Generations
+	if pkt.StageDistance() == 0 { // for WRC Generations
 		pol = -1
 	}
-	status.Steer = pol * pkt.Steer
-	status.Clutch = pkt.Clutch
-	status.Brake = pkt.Brake
-	status.Throttle = pkt.Throttle
-	status.Gear = int(pkt.Gear)
+	status.Steer = pol * pkt.Steering()
+	status.Clutch = pkt.Clutch()
+	status.Brake = pkt.Brake()
+	status.Throttle = pkt.Throttle()
+	status.Gear = pkt.Gear()
 }
 
 func (status *Status) Get() Params {
@@ -105,7 +105,6 @@ func udpReceiver(ctx context.Context, ch chan<- Params) error {
 			p.Active = false
 			ch <- p
 		})
-		var old codemasters.DirtPacket
 		b := make([]byte, 4096)
 		last := time.Now()
 		for {
@@ -118,21 +117,14 @@ func udpReceiver(ctx context.Context, ch chan<- Params) error {
 				continue
 			}
 			last = now
-			var pkt codemasters.DirtPacket
-			pkt.Decode(b[:n])
-			changed := false
-			changed = changed || old.Brake != pkt.Brake
-			changed = changed || old.Throttle != pkt.Throttle
-			changed = changed || old.Clutch != pkt.Clutch
-			changed = changed || old.Steer != pkt.Steer
-			changed = changed || old.LapTime != pkt.LapTime
-			changed = changed || old.LapDistance != pkt.LapDistance
-			old = pkt
-			if changed {
-				timer.Reset(5 * time.Second)
-				status.Activate()
+			pkt, err := codemasters.Decode(b[:n])
+			if err != nil {
+				done <- err
+				continue
 			}
-			status.Update(&pkt)
+			timer.Reset(5 * time.Second)
+			status.Activate()
+			status.Update(pkt)
 			ch <- status.Get()
 		}
 	}()
