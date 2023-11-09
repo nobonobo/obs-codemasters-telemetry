@@ -12,7 +12,9 @@
 
 ## OBS settings
 
-add executable option `--enable-gpu`
+add executable option `--enable-gpu` or below setting
+
+![img](./docs/obs-settings.png)
 
 - add 2 scenes:
   - "playing":
